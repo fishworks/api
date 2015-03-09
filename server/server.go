@@ -1,13 +1,20 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"syscall"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/fishworks/api"
 	"github.com/julienschmidt/httprouter"
+)
+
+var (
+	apps []*api.App
 )
 
 // Server defines a server which serves API requests.
@@ -82,18 +89,53 @@ func createRouter() *httprouter.Router {
 	m := map[string]map[string]func(http.ResponseWriter, *http.Request, httprouter.Params){
 		"GET": {
 			"/_ping": ping,
+			"/apps":  getAppsJSON,
+		},
+		"POST": {
+			"/apps": createApp,
 		},
 	}
 
 	for method, routes := range m {
 		for route, funct := range routes {
-			r.Handle(method, route, funct)
+			r.Handle(method, route, func(h httprouter.Handle) httprouter.Handle {
+				return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+					log.Debugf("%s %s", r.Method, r.RequestURI)
+					// Delegate request to the given handle
+					h(w, r, p)
+					return
+				}
+			}(funct))
 		}
 	}
 
 	return r
 }
 
+// WriteJSON writes the value v to the http response stream as json with standard
+// json encoding.
+func WriteJSON(w http.ResponseWriter, v interface{}, code int) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	return json.NewEncoder(w).Encode(v)
+}
+
 func ping(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	w.Write([]byte{'P', 'O', 'N', 'G'})
+}
+
+func getAppsJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	if len(apps) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		if err := WriteJSON(w, apps, http.StatusOK); err != nil {
+			log.Error(err)
+		}
+	}
+}
+
+func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	app := api.NewApp("")
+	apps = append(apps, app)
+	app.Log("created initial release")
 }

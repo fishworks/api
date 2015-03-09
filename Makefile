@@ -16,7 +16,7 @@ prefix := /usr/local
 bin_dir = $(prefix)/bin
 
 # the filepath to this repository, relative to $GOPATH/src
-repo_path = github.com/bacongobbler/api
+repo_path = github.com/fishworks/api
 
 # used to reference the output directory for build artifacts
 build_dir = bin
