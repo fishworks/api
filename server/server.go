@@ -17,12 +17,6 @@ var (
 	apps []*api.App
 )
 
-// Server defines a server which serves API requests.
-type Server interface {
-	Serve() error
-	Close() error
-}
-
 // HTTPServer is an API Server which listens and responds to HTTP requests.
 type HTTPServer struct {
 	srv *http.Server
@@ -39,8 +33,13 @@ func (s *HTTPServer) Close() error {
 	return s.l.Close()
 }
 
+// ServeRequest processes a single HTTP request.
+func (s *HTTPServer) ServeRequest(w http.ResponseWriter, req *http.Request) {
+	s.srv.Handler.ServeHTTP(w, req)
+}
+
 // NewServer sets up the required Server and does protocol specific checking.
-func NewServer(proto, addr string) (Server, error) {
+func NewServer(proto, addr string) (*HTTPServer, error) {
 	switch proto {
 	case "tcp":
 		return setupTCPHTTP(addr)
