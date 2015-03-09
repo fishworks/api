@@ -14,7 +14,8 @@ import (
 )
 
 var (
-	apps []*api.App
+	// Apps is the in-memory database for storing applications.
+	Apps []*api.App
 )
 
 // HTTPServer is an API Server which listens and responds to HTTP requests.
@@ -87,8 +88,9 @@ func createRouter() *httprouter.Router {
 
 	m := map[string]map[string]func(http.ResponseWriter, *http.Request, httprouter.Params){
 		"GET": {
-			"/_ping": ping,
-			"/apps":  getAppsJSON,
+			"/_ping":    ping,
+			"/apps":     getAppsJSON,
+			"/apps/:id": getAppJSON,
 		},
 		"POST": {
 			"/apps": createApp,
@@ -124,17 +126,29 @@ func ping(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 }
 
 func getAppsJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	if len(apps) == 0 {
+	if len(Apps) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 	} else {
-		if err := WriteJSON(w, apps, http.StatusOK); err != nil {
+		if err := WriteJSON(w, Apps, http.StatusOK); err != nil {
 			log.Error(err)
 		}
 	}
 }
 
+func getAppJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	for _, app := range Apps {
+		if app.ID == p.ByName("id") {
+			if err := WriteJSON(w, app, http.StatusOK); err != nil {
+				log.Error(err)
+			}
+		}
+	}
+	w.WriteHeader(http.StatusNotFound)
+}
+
 func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	app := api.NewApp("")
-	apps = append(apps, app)
+	Apps = append(Apps, app)
 	app.Log("created initial release")
+	w.WriteHeader(http.StatusCreated)
 }

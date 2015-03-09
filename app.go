@@ -3,16 +3,16 @@ package api
 import (
 	"fmt"
 	"math/rand"
-	"time"
 
 	"code.google.com/p/go-uuid/uuid"
 	log "github.com/Sirupsen/logrus"
+	"github.com/fishworks/api/pkg/time"
 )
 
 // App represents an application deployed to Deis.
 type App struct {
 	// UUID is the unique identifier for the app.
-	UUID    string    `json:"uuid"`
+	UUID    string    `json:"-"`
 	ID      string    `json:"id"`
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
