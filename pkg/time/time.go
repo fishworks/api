@@ -22,9 +22,8 @@ func Now() Time {
 // MarshalText implements the json.Marshaler interface.
 // The time is a quoted string in Deis' datetime format.
 func (t Time) MarshalText() ([]byte, error) {
-    return []byte(t.format()), nil
+	return []byte(t.format()), nil
 }
-
 
 // MarshalJSON implements the json.Marshaler interface.
 // The time is a quoted string in Deis' datetime format.

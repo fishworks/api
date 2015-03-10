@@ -21,7 +21,7 @@ repo_path = github.com/fishworks/api
 # used to reference the output directory for build artifacts
 build_dir = bin
 
-SRC_PACKAGES = api server test/integration
+SRC_PACKAGES = api pkg/time server test/integration
 REPO_SRC_PACKAGES = $(addprefix $(repo_path)/,$(SRC_PACKAGES))
 
 all: build
