@@ -21,7 +21,7 @@ type App struct {
 	ID      string    `json:"id"`
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
-	LogPath string
+	LogPath string    `json:"-"`
 }
 
 // NewApp creates a new application with the given ID. If no ID is supplied, one will be
