@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -59,6 +60,27 @@ func TestCreateAppAndThenList(t *testing.T) {
 	}
 	if len(server.Apps) != 1 {
 		t.Fatalf("%d app expected, got %d", 1, len(server.Apps))
+	}
+}
+
+func TestCreateAppWithID(t *testing.T) {
+	defer clearDB()
+	srv, err := server.NewServer("tcp", "0.0.0.0:4567")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+	r := httptest.NewRecorder()
+	req, err := http.NewRequest("POST", "/apps", bytes.NewBuffer([]byte(`{"id":"autotest"}`)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.ServeRequest(r, req)
+	if r.Code != http.StatusCreated {
+		t.Fatalf("%d CREATED expected, received %d\n", http.StatusCreated, r.Code)
+	}
+	if server.Apps[0].ID != "autotest" {
+		t.Errorf("%s expected, received %s\n", "autotest", server.Apps[0].ID)
 	}
 }
 

@@ -151,7 +151,21 @@ func getAppJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 }
 
 func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	app := api.NewApp("")
+	var app *api.App
+	if r.Body != nil {
+		decoder := json.NewDecoder(r.Body)
+		var form struct {
+			ID string `json:"id"`
+		}
+		if err := decoder.Decode(&form); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("could not decode request: " + err.Error()))
+			return
+		}
+		app = api.NewApp(form.ID)
+	} else {
+		app = api.NewApp("")
+	}
 	Apps = append(Apps, app)
 	app.Log("created initial release")
 	w.WriteHeader(http.StatusCreated)
