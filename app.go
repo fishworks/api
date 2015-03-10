@@ -3,8 +3,8 @@ package api
 import (
 	"bytes"
 	"fmt"
-	"math/rand"
 	"io"
+	"math/rand"
 	"os"
 	"path"
 	"strings"
@@ -43,6 +43,7 @@ func NewApp(id string) *App {
 		log.WithFields(log.Fields{
 			"app": app.ID,
 		}).Errorf("could not create log file: %v", err)
+		return app
 	}
 	defer f.Close()
 	return app
