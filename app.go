@@ -1,8 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
+	"io"
+	"os"
+	"path"
+	"strings"
 
 	"code.google.com/p/go-uuid/uuid"
 	log "github.com/Sirupsen/logrus"
@@ -16,6 +21,7 @@ type App struct {
 	ID      string    `json:"id"`
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
+	LogPath string
 }
 
 // NewApp creates a new application with the given ID. If no ID is supplied, one will be
@@ -24,12 +30,22 @@ func NewApp(id string) *App {
 	if id == "" {
 		id = generateAppName()
 	}
-	return &App{
+	app := &App{
 		UUID:    uuid.New(),
 		ID:      id,
 		Created: time.Now(),
 		Updated: time.Now(),
+		LogPath: path.Join("/tmp", id+".log"),
 	}
+	// truncate or create the file
+	f, err := os.Create(app.LogPath)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"app": app.ID,
+		}).Errorf("could not create log file: %v", err)
+	}
+	defer f.Close()
+	return app
 }
 
 func (a App) String() string {
@@ -38,16 +54,24 @@ func (a App) String() string {
 
 // Log stores an application message on disk, using the default formats for its operands.
 func (a App) Log(message string) {
+	f, err := os.OpenFile(a.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"app": a.ID,
+		}).Errorf("error opening file: %v", err)
+		return
+	}
+	defer f.Close()
 	log.WithFields(log.Fields{
 		"app": a.ID,
 	}).Info(message)
+	buf := bytes.NewBufferString(fmt.Sprintf("%s deis[api]: %s\n", time.Now(), strings.TrimSpace(message)))
+	io.Copy(f, buf)
 }
 
 // Logf stores an application message on disk, formatting according to a format specifier.
 func (a App) Logf(message string, args ...interface{}) {
-	log.WithFields(log.Fields{
-		"app": a.ID,
-	}).Infof(message, args)
+	a.Log(fmt.Sprintf(message, args))
 }
 
 func generateAppName() string {

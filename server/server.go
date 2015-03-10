@@ -88,9 +88,10 @@ func createRouter() *httprouter.Router {
 
 	m := map[string]map[string]func(http.ResponseWriter, *http.Request, httprouter.Params){
 		"GET": {
-			"/_ping":    ping,
-			"/apps":     getAppsJSON,
-			"/apps/:id": getAppJSON,
+			"/_ping":         ping,
+			"/apps":          getAppsJSON,
+			"/apps/:id":      getAppJSON,
+			"/apps/:id/logs": getAppLogs,
 		},
 		"POST": {
 			"/apps": createApp,
@@ -151,4 +152,14 @@ func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	Apps = append(Apps, app)
 	app.Log("created initial release")
 	w.WriteHeader(http.StatusCreated)
+}
+
+func getAppLogs(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	for _, app := range Apps {
+		if app.ID == p.ByName("id") {
+			w.WriteHeader(http.StatusOK)
+			http.ServeFile(w, r, app.LogPath)
+		}
+	}
+	w.WriteHeader(http.StatusNotFound)
 }

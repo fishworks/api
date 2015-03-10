@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/fishworks/api"
@@ -80,5 +81,28 @@ func TestGetAppRemovesUUID(t *testing.T) {
 	}
 	if app2.UUID != "" {
 		t.Fatalf("%s expected, received %s\n", "blank UUID", app2.UUID)
+	}
+}
+
+func TestGetAppLogs(t *testing.T) {
+	app := api.NewApp("autotest")
+	server.Apps = append(server.Apps, app)
+	app.Log("ohai der =3")
+	server, err := server.NewServer("tcp", "0.0.0.0:4567")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+	r := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/apps/autotest/logs", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server.ServeRequest(r, req)
+	if r.Code != http.StatusOK {
+		t.Fatalf("%d OK expected, received %d\n", http.StatusOK, r.Code)
+	}
+	if !strings.Contains(r.Body.String(), "deis[api]: ohai der =3") {
+		t.Fatalf("%s expected, received %s\n", "deis[api]: ohai der =3", r.Body.String())
 	}
 }
