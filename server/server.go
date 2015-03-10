@@ -96,6 +96,9 @@ func createRouter() *httprouter.Router {
 		"POST": {
 			"/apps": createApp,
 		},
+		"DELETE": {
+			"/apps/:id": deleteApp,
+		},
 	}
 
 	for method, routes := range m {
@@ -159,6 +162,16 @@ func getAppLogs(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if app.ID == p.ByName("id") {
 			w.WriteHeader(http.StatusOK)
 			http.ServeFile(w, r, app.LogPath)
+		}
+	}
+	w.WriteHeader(http.StatusNotFound)
+}
+
+func deleteApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	for i, app := range Apps {
+		if app.ID == p.ByName("id") {
+			Apps = append(Apps[:i], Apps[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
 		}
 	}
 	w.WriteHeader(http.StatusNotFound)
