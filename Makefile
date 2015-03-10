@@ -44,7 +44,7 @@ test:
 	$(GOLINT) ./...
 	$(GOLINT) ./... | read; if [ $$? == 0 ]; then echo "golint check failed."; exit 1; fi
 
+	$(GOVET) ./...
 	$(GOTEST) $(REPO_SRC_PACKAGES)
-	$(GOVET) $(REPO_SRC_PACKAGES)
 
 .PHONY: all build clean install test

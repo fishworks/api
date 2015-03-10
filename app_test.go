@@ -22,7 +22,7 @@ func TestCreateApp(t *testing.T) {
 	}
 
 	if app.ID != "test" {
-		t.Errorf("expected app ID == '%s', got '%s'")
+		t.Errorf("expected app ID == '%s', got '%s'", "test", app.ID)
 	}
 }
 
