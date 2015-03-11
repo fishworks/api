@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -172,10 +173,38 @@ func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 }
 
 func getAppLogs(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	follow := r.URL.Query().Get("follow")
 	for _, app := range Apps {
 		if app.ID == p.ByName("id") {
-			w.WriteHeader(http.StatusOK)
-			http.ServeFile(w, r, app.LogPath)
+			// hijack the connection if we want to "follow" the logs
+			if follow == "true" {
+				hj, ok := w.(http.Hijacker)
+				if !ok {
+					http.Error(w, "webserver doesn't support hijacking", http.StatusInternalServerError)
+					return
+				}
+				conn, bufrw, err := hj.Hijack()
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				defer conn.Close()
+				f, err := os.Open(app.LogPath)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				defer f.Close()
+				go func() {
+					for {
+						io.Copy(conn, f)
+					}
+				}()
+				bufrw.ReadString('\n')
+			} else {
+				http.ServeFile(w, r, app.LogPath)
+			}
+			return
 		}
 	}
 	w.WriteHeader(http.StatusNotFound)
