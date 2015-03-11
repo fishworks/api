@@ -152,16 +152,22 @@ func getAppJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 }
 
 func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	var app *api.App
-	if r.Body != nil {
-		decoder := json.NewDecoder(r.Body)
-		var form struct {
+	var (
+		app  *api.App
+		form struct {
 			ID string `json:"id"`
 		}
+	)
+	if r.Body != nil {
+		decoder := json.NewDecoder(r.Body)
 		if err := decoder.Decode(&form); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("could not decode request: " + err.Error()))
-			return
+			// the request body is always non-nil (except in tests) but will return EOF immediately when no body is present.
+			// http://golang.org/pkg/net/http/#Request
+			if err != io.EOF {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("could not decode request: " + err.Error()))
+				return
+			}
 		}
 		app = api.NewApp(form.ID)
 	} else {
