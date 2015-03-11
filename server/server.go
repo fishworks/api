@@ -106,7 +106,7 @@ func createRouter() *httprouter.Router {
 		for route, funct := range routes {
 			r.Handle(method, route, func(h httprouter.Handle) httprouter.Handle {
 				return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-					log.Debugf("%s %s", r.Method, r.RequestURI)
+					log.Infof("%s %s", r.Method, r.RequestURI)
 					// Delegate request to the given handle
 					h(w, r, p)
 					return
