@@ -6,10 +6,11 @@ build:
     - script:
         name: deps
         code: |-
-            go get github.com/julienschmidt/httprouter
-            go get github.com/Sirupsen/logrus
             go get code.google.com/p/go-uuid/uuid
             go get github.com/golang/lint/golint
+            go get github.com/julienschmidt/httprouter
+            go get github.com/Sirupsen/logrus
+            go get golang.org/x/crypto/bcrypt
     - script:
         name: build
         code: |-
