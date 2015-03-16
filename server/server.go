@@ -12,14 +12,15 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/fishworks/api"
 	"github.com/fishworks/api/auth"
+	"github.com/fishworks/api/auth/strategy"
 	"github.com/julienschmidt/httprouter"
 )
 
 var (
 	// Apps is the in-memory database for storing applications.
 	Apps []*api.App
-	// Tokens represents the in-memory database for storing user auth tokens.
-	Tokens []*auth.Token
+	// Strategies represents an in-memory database for storing user auth strategies.
+	Strategies []strategy.Strategy
 	// Users represents the in-memory database for storing users.
 	Users []*auth.User
 )
@@ -137,14 +138,15 @@ func logRequestMiddleware(h httprouter.Handle) httprouter.Handle {
 
 func authMiddleware(h httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		for _, token := range Tokens {
-			if fmt.Sprintf("token %s", token.Key) == r.Header.Get("HTTP_AUTHORIZATION") {
+		for _, strategy := range Strategies {
+			if strategy.IsAuthenticated(r) {
+				// Delegate request to the given handle
 				h(w, r, p)
 				return
 			}
 		}
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("could not find matching token"))
+		w.Write([]byte("could not find matching auth strategy"))
 	}
 }
 

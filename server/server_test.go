@@ -3,8 +3,6 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,25 +12,23 @@ import (
 	"github.com/fishworks/api/auth"
 )
 
+// DumbStrategy is used to authenticate against *all* incoming requests so no authentication is
+// necessary.
+type DumbStrategy struct{}
+
+func (d DumbStrategy) IsAuthenticated(r *http.Request) bool {
+	return true
+}
+
 func init() {
 	// create a test user for authenticated requests
 	user, _ := auth.NewUser("testuser", "test@example.com", []byte("test"))
 	Users = append(Users, user)
-	token := auth.NewToken(user)
-	Tokens = append(Tokens, token)
+	Strategies = append(Strategies, &DumbStrategy{})
 }
 
 func clearDB() {
 	Apps = Apps[:0]
-}
-
-func newAuthenticatedRequest(method, uri string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, uri, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("HTTP_AUTHORIZATION", fmt.Sprintf("token %s", Tokens[0].Key))
-	return req, nil
 }
 
 func TestEmptyListAppsReturnsNoContent(t *testing.T) {
@@ -42,7 +38,7 @@ func TestEmptyListAppsReturnsNoContent(t *testing.T) {
 	}
 	defer srv.Close()
 	r := httptest.NewRecorder()
-	req, err := newAuthenticatedRequest("GET", "/apps", nil)
+	req, err := http.NewRequest("GET", "/apps", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +56,7 @@ func TestCreateAppAndThenList(t *testing.T) {
 	}
 	defer srv.Close()
 	r := httptest.NewRecorder()
-	req, err := newAuthenticatedRequest("POST", "/apps", nil)
+	req, err := http.NewRequest("POST", "/apps", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +65,7 @@ func TestCreateAppAndThenList(t *testing.T) {
 		t.Fatalf("%d CREATED expected, received %d\n", http.StatusCreated, r.Code)
 	}
 	r = httptest.NewRecorder()
-	req, err = newAuthenticatedRequest("GET", "/apps", nil)
+	req, err = http.NewRequest("GET", "/apps", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +86,7 @@ func TestCreateAppWithID(t *testing.T) {
 	}
 	defer srv.Close()
 	r := httptest.NewRecorder()
-	req, err := newAuthenticatedRequest("POST", "/apps", bytes.NewBuffer([]byte(`{"id":"autotest"}`)))
+	req, err := http.NewRequest("POST", "/apps", bytes.NewBuffer([]byte(`{"id":"autotest"}`)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +110,7 @@ func TestGetAppRemovesUUID(t *testing.T) {
 	}
 	defer srv.Close()
 	r := httptest.NewRecorder()
-	req, err := newAuthenticatedRequest("GET", "/apps/autotest", nil)
+	req, err := http.NewRequest("GET", "/apps/autotest", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +138,7 @@ func TestGetAppLogs(t *testing.T) {
 	}
 	defer srv.Close()
 	r := httptest.NewRecorder()
-	req, err := newAuthenticatedRequest("GET", "/apps/autotest/logs", nil)
+	req, err := http.NewRequest("GET", "/apps/autotest/logs", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +161,7 @@ func TestDeleteApp(t *testing.T) {
 	}
 	defer srv.Close()
 	r := httptest.NewRecorder()
-	req, err := newAuthenticatedRequest("DELETE", "/apps/autotest", nil)
+	req, err := http.NewRequest("DELETE", "/apps/autotest", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
