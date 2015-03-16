@@ -2,7 +2,7 @@ package api
 
 import (
 	"errors"
-        "fmt"
+	"fmt"
 )
 
 // Release represents a snapshot of an application's build and config artifacts, which is
