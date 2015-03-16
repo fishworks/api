@@ -2,11 +2,13 @@ package api
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -14,14 +16,21 @@ import (
 	"github.com/fishworks/api/pkg/time"
 )
 
+type releaseLedger []*Release
+
+func (rl releaseLedger) Len() int           { return len(rl) }
+func (rl releaseLedger) Swap(i, j int)      { rl[i], rl[j] = rl[j], rl[i] }
+func (rl releaseLedger) Less(i, j int) bool { return rl[i].Version < rl[j].Version }
+
 // App represents an application deployed to Deis.
 type App struct {
 	// UUID is the unique identifier for the app.
-	UUID    string    `json:"-"`
-	ID      string    `json:"id"`
-	Created time.Time `json:"created"`
-	Updated time.Time `json:"updated"`
-	LogPath string    `json:"-"`
+	UUID    string        `json:"-"`
+	ID      string        `json:"id"`
+	Created time.Time     `json:"created"`
+	Updated time.Time     `json:"updated"`
+	LogPath string        `json:"-"`
+	Ledger  releaseLedger `json:"-"`
 }
 
 // NewApp creates a new application with the given ID. If no ID is supplied, one will be
@@ -73,6 +82,38 @@ func (a App) Log(message string) {
 // Logf stores an application message on disk, formatting according to a format specifier.
 func (a App) Logf(message string, args ...interface{}) {
 	a.Log(fmt.Sprintf(message, args))
+}
+
+// LatestRelease returns the most recent release in the ledger.
+func (a App) LatestRelease() *Release {
+	sort.Sort(sort.Reverse(a.Ledger))
+	return a.Ledger[0]
+}
+
+// NewRelease appends a new release to the ledger using the provided build and config.
+func (a *App) NewRelease(build *Build, config *Config) *Release {
+	newVersion := a.LatestRelease().Version + 1
+	release := &Release{
+		Build:   build,
+		Config:  config,
+		Version: newVersion,
+	}
+	a.Ledger = append(a.Ledger, release)
+	return release
+}
+
+// Rollback appends a new release to the ledger using the specified release's build + config.
+func (a *App) Rollback(version int) error {
+	if version < 1 {
+		return errors.New("version cannot be below 0")
+	}
+	for _, r := range a.Ledger {
+		if r.Version == version {
+			release := a.NewRelease(r.Build, r.Config)
+			return release.Publish()
+		}
+	}
+	return errors.New("release not found")
 }
 
 func generateAppName() string {

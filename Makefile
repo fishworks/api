@@ -7,7 +7,7 @@ RM = rm -f
 GOBUILD = $(GO) build -o
 GOFMT = gofmt -l
 GOLINT = golint
-GOTEST = $(GO) test -cover --race
+GOTEST = $(GO) test --cover --race
 GOVET = $(GO) vet
 
 prefix := /usr/local
@@ -21,7 +21,7 @@ repo_path = github.com/fishworks/api
 # used to reference the output directory for build artifacts
 build_dir = bin
 
-SRC_PACKAGES = api pkg/time server test/integration
+SRC_PACKAGES = api pkg/time server
 REPO_SRC_PACKAGES = $(addprefix $(repo_path)/,$(SRC_PACKAGES))
 
 all: build
