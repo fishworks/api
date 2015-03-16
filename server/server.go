@@ -11,12 +11,17 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/fishworks/api"
+	"github.com/fishworks/api/auth"
 	"github.com/julienschmidt/httprouter"
 )
 
 var (
 	// Apps is the in-memory database for storing applications.
 	Apps []*api.App
+	// Tokens represents the in-memory database for storing user auth tokens.
+	Tokens []*auth.Token
+	// Users represents the in-memory database for storing users.
+	Users []*auth.User
 )
 
 // HTTPServer is an API Server which listens and responds to HTTP requests.
@@ -87,9 +92,20 @@ func setupUnixHTTP(addr string) (*HTTPServer, error) {
 func createRouter() *httprouter.Router {
 	r := httprouter.New()
 
-	m := map[string]map[string]func(http.ResponseWriter, *http.Request, httprouter.Params){
+	authNotRequiredMap := map[string]map[string]httprouter.Handle{
 		"GET": {
-			"/_ping":         ping,
+			"/_ping": ping,
+		},
+	}
+
+	for method, routes := range authNotRequiredMap {
+		for route, funct := range routes {
+			r.Handle(method, route, logRequestMiddleware(funct))
+		}
+	}
+
+	authRequiredMap := map[string]map[string]httprouter.Handle{
+		"GET": {
 			"/apps":          getAppsJSON,
 			"/apps/:id":      getAppJSON,
 			"/apps/:id/logs": getAppLogs,
@@ -102,20 +118,34 @@ func createRouter() *httprouter.Router {
 		},
 	}
 
-	for method, routes := range m {
+	for method, routes := range authRequiredMap {
 		for route, funct := range routes {
-			r.Handle(method, route, func(h httprouter.Handle) httprouter.Handle {
-				return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-					log.Infof("%s %s", r.Method, r.RequestURI)
-					// Delegate request to the given handle
-					h(w, r, p)
-					return
-				}
-			}(funct))
+			r.Handle(method, route, authMiddleware(funct))
 		}
 	}
 
 	return r
+}
+
+func logRequestMiddleware(h httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		log.Infof("%s %s", r.Method, r.RequestURI)
+		// Delegate request to the given handle
+		h(w, r, p)
+	}
+}
+
+func authMiddleware(h httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		for _, token := range Tokens {
+			if fmt.Sprintf("token %s", token.Key) == r.Header.Get("HTTP_AUTHORIZATION") {
+				h(w, r, p)
+				return
+			}
+		}
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("could not find matching token"))
+	}
 }
 
 // WriteJSON writes the value v to the http response stream as json with standard
