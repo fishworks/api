@@ -120,7 +120,7 @@ func createRouter() *httprouter.Router {
 
 	for method, routes := range authRequiredMap {
 		for route, funct := range routes {
-			r.Handle(method, route, authMiddleware(funct))
+			r.Handle(method, route, logRequestMiddleware(authMiddleware(funct)))
 		}
 	}
 
