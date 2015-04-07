@@ -1,4 +1,4 @@
-box: wercker/golang
+box: golang
 build:
   steps:
     - setup-go-workspace
@@ -14,7 +14,7 @@ build:
     - script:
         name: build
         code: |-
-            make && sudo make install
+            make && make install
     - script:
         name: test
         code: |-
