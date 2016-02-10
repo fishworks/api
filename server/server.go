@@ -12,16 +12,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/fishworks/api"
 	"github.com/fishworks/api/auth"
-	"github.com/fishworks/api/auth/strategy"
 	"github.com/julienschmidt/httprouter"
 )
 
 var (
-	// Apps is the in-memory database for storing applications.
-	Apps []*api.App
-	// Strategies represents an in-memory database for storing user auth strategies.
-	Strategies []strategy.Strategy
-	// Users represents the in-memory database for storing users.
+	Apps  []*api.App
 	Users []*auth.User
 )
 
@@ -121,7 +116,7 @@ func createRouter() *httprouter.Router {
 
 	for method, routes := range authRequiredMap {
 		for route, funct := range routes {
-			r.Handle(method, route, logRequestMiddleware(authMiddleware(funct)))
+			r.Handle(method, route, logRequestMiddleware(funct))
 		}
 	}
 
@@ -133,20 +128,6 @@ func logRequestMiddleware(h httprouter.Handle) httprouter.Handle {
 		log.Infof("%s %s", r.Method, r.RequestURI)
 		// Delegate request to the given handle
 		h(w, r, p)
-	}
-}
-
-func authMiddleware(h httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		for _, strategy := range Strategies {
-			if strategy.IsAuthenticated(r) {
-				// Delegate request to the given handle
-				h(w, r, p)
-				return
-			}
-		}
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("could not find matching auth strategy"))
 	}
 }
 

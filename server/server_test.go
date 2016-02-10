@@ -12,19 +12,10 @@ import (
 	"github.com/fishworks/api/auth"
 )
 
-// DumbStrategy is used to authenticate against *all* incoming requests so no authentication is
-// necessary.
-type DumbStrategy struct{}
-
-func (d DumbStrategy) IsAuthenticated(r *http.Request) bool {
-	return true
-}
-
 func init() {
 	// create a test user for authenticated requests
 	user, _ := auth.NewUser("testuser", "test@example.com", []byte("test"))
 	Users = append(Users, user)
-	Strategies = append(Strategies, &DumbStrategy{})
 }
 
 func clearDB() {
