@@ -10,10 +10,10 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
-	"code.google.com/p/go-uuid/uuid"
 	log "github.com/Sirupsen/logrus"
-	"github.com/fishworks/api/pkg/time"
+	"github.com/pborman/uuid"
 )
 
 type releaseLedger []*Release
