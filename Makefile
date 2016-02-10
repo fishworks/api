@@ -1,4 +1,5 @@
 SHELL = /bin/bash
+GO15VENDOREXPERIMENT = 1
 
 GO = go
 INSTALL = install
@@ -21,8 +22,7 @@ repo_path = github.com/fishworks/api
 # used to reference the output directory for build artifacts
 build_dir = bin
 
-SRC_PACKAGES = api auth auth/strategy auth/strategy/token pkg/time server
-REPO_SRC_PACKAGES = $(addprefix $(repo_path)/,$(SRC_PACKAGES))
+NOVENDOR = $(shell glide nv)
 
 all: build
 
@@ -36,15 +36,6 @@ install:
 	$(INSTALL) -c $(build_dir)/api $(bin_dir)/api
 
 test:
-# display output, then check
-	$(GOFMT) $(SRC_PACKAGES)
-	@$(GOFMT) $(SRC_PACKAGES) | read; if [ $$? == 0 ]; then echo "gofmt check failed."; exit 1; fi
-
-# display output, then check
-	$(GOLINT) ./...
-	$(GOLINT) ./... | read; if [ $$? == 0 ]; then echo "golint check failed."; exit 1; fi
-
-	$(GOVET) ./...
-	$(GOTEST) $(REPO_SRC_PACKAGES)
+	$(GOTEST) $(NOVENDOR)
 
 .PHONY: all build clean install test
