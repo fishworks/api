@@ -1,0 +1,6 @@
+package: github.com/fishworks/api
+import:
+  - package: github.com/julienschmidt/httprouter
+  - package: github.com/pborman/uuid
+  - package: github.com/Sirupsen/logrus
+  - package: golang.org/x/crypto

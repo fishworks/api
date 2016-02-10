@@ -1,16 +1,14 @@
-box: golang
+box: golang:1.5.3
 build:
   steps:
-    - setup-go-workspace
-
+    - setup-go-workspace:
+        package-dir: github.com/fishworks/api
     - script:
         name: deps
         code: |-
-            go get code.google.com/p/go-uuid/uuid
-            go get github.com/golang/lint/golint
-            go get github.com/julienschmidt/httprouter
-            go get github.com/Sirupsen/logrus
-            go get golang.org/x/crypto/bcrypt
+            go get github.com/Masterminds/glide
+            export GO15VENDOREXPERIMENT=1
+            glide up
     - script:
         name: build
         code: |-
