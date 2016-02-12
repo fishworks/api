@@ -86,13 +86,19 @@ func (a App) Logf(message string, args ...interface{}) {
 
 // LatestRelease returns the most recent release in the ledger.
 func (a App) LatestRelease() *Release {
+	if len(a.Ledger) == 0 {
+		return nil
+	}
 	sort.Sort(sort.Reverse(a.Ledger))
 	return a.Ledger[0]
 }
 
 // NewRelease appends a new release to the ledger using the provided build and config.
 func (a *App) NewRelease(build *Build, config *Config) *Release {
-	newVersion := a.LatestRelease().Version + 1
+	newVersion := 1
+	if latestRelease := a.LatestRelease(); latestRelease != nil {
+		newVersion = latestRelease.Version + 1
+	}
 	release := &Release{
 		Build:   build,
 		Config:  config,
