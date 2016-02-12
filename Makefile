@@ -27,7 +27,7 @@ NOVENDOR = $(shell glide nv)
 all: build
 
 build:
-	$(GOBUILD) $(build_dir)/api $(repo_path)/api
+	$(GOBUILD) $(build_dir)/api $(repo_path)/cmd
 
 clean:
 	$(RM) $(build_dir)/*
