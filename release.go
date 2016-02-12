@@ -25,5 +25,6 @@ func (r Release) Publish() error {
 	if r.Build == nil {
 		return errors.New("cannot publish; no build associated with this release")
 	}
+	// TODO: implement scheduler deploy
 	return errors.New("not implemented")
 }
