@@ -7,7 +7,10 @@ This is an experimental proof-of-concept for migrating Deis' controller componen
 
 # Compiling from Source
 
+First, install [glide](https://github.com/Masterminds/glide) and ensure you're on Go 1.5+ with `export GO15VENDOREXPERIMENT=1`. Then,
+
 ```bash
+$ glide up
 $ make && make install
 ```
 
