@@ -16,12 +16,12 @@ type Release struct {
 	Version int     `json:"version"`
 }
 
-func (r Release) String() string {
+func (r *Release) String() string {
 	return fmt.Sprintf("v%d", r.Version)
 }
 
 // Publish publishes the build along with the config to a remote store.
-func (r Release) Publish() error {
+func (r *Release) Publish() error {
 	if r.Build == nil {
 		return errors.New("cannot publish; no build associated with this release")
 	}

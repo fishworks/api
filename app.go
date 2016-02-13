@@ -58,12 +58,12 @@ func NewApp(id string) *App {
 	return app
 }
 
-func (a App) String() string {
+func (a *App) String() string {
 	return a.ID
 }
 
 // Log stores an application message on disk, using the default formats for its operands.
-func (a App) Log(message string) {
+func (a *App) Log(message string) {
 	f, err := os.OpenFile(a.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -80,12 +80,12 @@ func (a App) Log(message string) {
 }
 
 // Logf stores an application message on disk, formatting according to a format specifier.
-func (a App) Logf(message string, args ...interface{}) {
+func (a *App) Logf(message string, args ...interface{}) {
 	a.Log(fmt.Sprintf(message, args))
 }
 
 // LatestRelease returns the most recent release in the ledger.
-func (a App) LatestRelease() *Release {
+func (a *App) LatestRelease() *Release {
 	if len(a.Ledger) == 0 {
 		return nil
 	}

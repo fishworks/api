@@ -17,6 +17,6 @@ type Build struct {
 	Procfile map[string]string
 }
 
-func (b Build) String() string {
+func (b *Build) String() string {
 	return b.Artifact
 }
