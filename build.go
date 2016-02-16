@@ -11,10 +11,10 @@ type Build struct {
 	// specified by the deployment process. For example, with Docker this would be the
 	// fully-qualified docker image name stored on the registry. For rkt, this would be
 	// a URL to the Application Container Image (or ACI for short).
-	Artifact string
+	Artifact string `json:"artifact"`
 	// Procfile is a process mapping between the artifact's process types and the command
 	// associated with said process type.
-	Procfile map[string]string
+	Procfile map[string]string `json:"procfile"`
 }
 
 func (b *Build) String() string {

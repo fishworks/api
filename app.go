@@ -55,6 +55,8 @@ func NewApp(id string) *App {
 		return app
 	}
 	defer f.Close()
+	// create an initial release for the app
+	app.NewRelease(nil, nil)
 	return app
 }
 
@@ -95,14 +97,31 @@ func (a *App) LatestRelease() *Release {
 
 // NewRelease appends a new release to the ledger using the provided build and config.
 func (a *App) NewRelease(build *Build, config *Config) *Release {
-	newVersion := 1
-	if latestRelease := a.LatestRelease(); latestRelease != nil {
-		newVersion = latestRelease.Version + 1
+	latestRelease := a.LatestRelease()
+	if latestRelease == nil {
+		latestRelease = &Release{
+			App:     a,
+			Version: 0,
+		}
+	}
+	if build == nil {
+		build = latestRelease.Build
+	}
+	if config == nil {
+		config = latestRelease.Config
 	}
 	release := &Release{
+		App:     a,
 		Build:   build,
 		Config:  config,
-		Version: newVersion,
+		Version: latestRelease.Version + 1,
+	}
+	if release.Version == 1 {
+		a.Log("created initial release")
+	} else if build != latestRelease.Build {
+		a.Log("deployed " + build.Artifact)
+	} else if config != latestRelease.Config {
+		a.Log("changed config")
 	}
 	a.Ledger = append(a.Ledger, release)
 	return release

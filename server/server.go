@@ -41,8 +41,8 @@ func (s *HTTPServer) ServeRequest(w http.ResponseWriter, req *http.Request) {
 	s.srv.Handler.ServeHTTP(w, req)
 }
 
-// NewServer sets up the required Server and does protocol specific checking.
-func NewServer(proto, addr string) (*HTTPServer, error) {
+// New sets up the required Server and does protocol specific checking.
+func New(proto, addr string) (*HTTPServer, error) {
 	switch proto {
 	case "tcp":
 		return setupTCPHTTP(addr)
@@ -85,6 +85,15 @@ func setupUnixHTTP(addr string) (*HTTPServer, error) {
 	return &HTTPServer{&http.Server{Addr: addr, Handler: r}, l}, nil
 }
 
+func getApp(id string) *api.App {
+	for _, app := range Apps {
+		if app.ID == id {
+			return app
+		}
+	}
+	return nil
+}
+
 func createRouter() *httprouter.Router {
 	r := httprouter.New()
 
@@ -107,7 +116,8 @@ func createRouter() *httprouter.Router {
 			"/apps/:id/logs": getAppLogs,
 		},
 		"POST": {
-			"/apps": createApp,
+			"/apps":            createApp,
+			"/apps/:id/builds": createBuild,
 		},
 		"DELETE": {
 			"/apps/:id": deleteApp,
@@ -159,6 +169,7 @@ func getAppJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			if err := WriteJSON(w, app, http.StatusOK); err != nil {
 				log.Error(err)
 			}
+			return
 		}
 	}
 	w.WriteHeader(http.StatusNotFound)
@@ -187,7 +198,39 @@ func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		app = api.NewApp("")
 	}
 	Apps = append(Apps, app)
-	app.Log("created initial release")
+	w.WriteHeader(http.StatusCreated)
+}
+
+func createBuild(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var build *api.Build
+	if r.Body != nil {
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&build); err != nil {
+			// the request body is always non-nil (except in tests) but will return EOF immediately when no body is present.
+			// http://golang.org/pkg/net/http/#Request
+			if err != io.EOF {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("could not decode request: " + err.Error()))
+				return
+			}
+		}
+		app := getApp(p.ByName("id"))
+		if app == nil {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("could not find app with id " + p.ByName("id")))
+			return
+		}
+		release := app.NewRelease(build, nil)
+		if err := release.Publish(); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(fmt.Sprintf("there was an error deploying this release: %v", err)))
+			return
+		}
+		app.Log("released " + release.String())
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 }
 

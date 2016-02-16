@@ -1,5 +1,6 @@
 package: github.com/fishworks/api
 import:
+  - package: github.com/fsouza/go-dockerclient
   - package: github.com/julienschmidt/httprouter
   - package: github.com/pborman/uuid
   - package: github.com/Sirupsen/logrus

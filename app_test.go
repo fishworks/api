@@ -53,7 +53,7 @@ func TestAppRelease(t *testing.T) {
 	if app.Ledger.Len() != 2 {
 		t.Errorf("expected release2 to be appended to the ledger; got %d", app.Ledger.Len())
 	}
-	if ! app.Ledger.Less(0, 1) {
+	if !app.Ledger.Less(0, 1) {
 		t.Errorf("expected v1 to be less than v2")
 	}
 	app.Ledger.Swap(0, 1)

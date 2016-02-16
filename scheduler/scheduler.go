@@ -3,7 +3,20 @@ package scheduler
 import (
 	"errors"
 	"os/exec"
+
+	log "github.com/Sirupsen/logrus"
 )
+
+type State int
+
+type Scheduler interface {
+	Create(name, artifact string, command *exec.Cmd) error
+	Destroy(name string) error
+	Run(name string, command *exec.Cmd) error
+	Start(name string) error
+	State(name string) State
+	Stop(name string) error
+}
 
 const (
 	StatePending State = iota
@@ -13,19 +26,11 @@ const (
 	StateUnknown
 )
 
-type Scheduler interface {
-	Create(name string) error
-	Destroy(name string) error
-	Run(name string, command *exec.Cmd) error
-	Start(name string) error
-	State(name string) (State, error)
-	Stop(name string) error
-}
-
-type State int
-
 func New(module string) (Scheduler, error) {
-	switch(module) {
+	log.Debugf("creating scheduler with module %s", module)
+	switch module {
+	case "docker":
+		return NewDockerScheduler()
 	case "mock":
 		return &MockScheduler{}, nil
 	default:
