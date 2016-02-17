@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	Apps   []*api.App
-	Builds []*api.Build
-	Users  []*auth.User
+	Apps    []*api.App
+	Builds  []*api.Build
+	Configs []*api.Config
+	Users   []*auth.User
 )
 
 // HTTPServer is an API Server which listens and responds to HTTP requests.
@@ -115,11 +116,13 @@ func createRouter() *httprouter.Router {
 			"/apps":            getAppsJSON,
 			"/apps/:id":        getAppJSON,
 			"/apps/:id/builds": getAppBuildsJSON,
+			"/apps/:id/config": getAppConfigJSON,
 			"/apps/:id/logs":   getAppLogs,
 		},
 		"POST": {
 			"/apps":            createApp,
 			"/apps/:id/builds": createBuild,
+			"/apps/:id/config": createConfig,
 		},
 		"DELETE": {
 			"/apps/:id": deleteApp,
@@ -197,6 +200,28 @@ func getAppBuildsJSON(w http.ResponseWriter, r *http.Request, p httprouter.Param
 	}
 }
 
+func getAppConfigJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var configs []*api.Config
+	if app := getApp(p.ByName("id")); app != nil {
+		for _, config := range Configs {
+			if config.App == app {
+				configs = append(configs, config)
+			}
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if len(configs) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		if err := WriteJSON(w, configs, http.StatusOK); err != nil {
+			log.Error(err)
+		}
+	}
+}
+
 func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var (
 		app  *api.App
@@ -247,6 +272,43 @@ func createBuild(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// add build to in-memory list
 		Builds = append(Builds, build)
 		release := app.NewRelease(build, nil)
+		if err := release.Publish(); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte(fmt.Sprintf("there was an error deploying this release: %v", err)))
+			return
+		}
+		app.Log("released " + release.String())
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func createConfig(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var config *api.Config
+	if r.Body != nil {
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&config); err != nil {
+			// the request body is always non-nil (except in tests) but will return EOF immediately when no body is present.
+			// http://golang.org/pkg/net/http/#Request
+			if err != io.EOF {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("could not decode request: " + err.Error()))
+				return
+			}
+		}
+		app := getApp(p.ByName("id"))
+		if app == nil {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("could not find app with id " + p.ByName("id")))
+			return
+		}
+		// attach app to config
+		config.App = app
+		// add build to in-memory list
+		Configs = append(Configs, config)
+		release := app.NewRelease(nil, config)
 		if err := release.Publish(); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte(fmt.Sprintf("there was an error deploying this release: %v", err)))
