@@ -23,7 +23,7 @@ func clearDB() {
 }
 
 func TestEmptyListAppsReturnsNoContent(t *testing.T) {
-	srv, err := NewServer("tcp", "0.0.0.0:4567")
+	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestEmptyListAppsReturnsNoContent(t *testing.T) {
 
 func TestCreateAppAndThenList(t *testing.T) {
 	defer clearDB()
-	srv, err := NewServer("tcp", "0.0.0.0:4567")
+	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestCreateAppAndThenList(t *testing.T) {
 
 func TestCreateAppWithID(t *testing.T) {
 	defer clearDB()
-	srv, err := NewServer("tcp", "0.0.0.0:4567")
+	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestGetAppRemovesUUID(t *testing.T) {
 	defer clearDB()
 	app := api.NewApp("autotest")
 	Apps = append(Apps, app)
-	srv, err := NewServer("tcp", "0.0.0.0:4567")
+	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestGetAppLogs(t *testing.T) {
 	app := api.NewApp("autotest")
 	Apps = append(Apps, app)
 	app.Log("ohai der =3")
-	srv, err := NewServer("tcp", "0.0.0.0:4567")
+	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +146,7 @@ func TestDeleteApp(t *testing.T) {
 	defer clearDB()
 	app := api.NewApp("autotest")
 	Apps = append(Apps, app)
-	srv, err := NewServer("tcp", "0.0.0.0:4567")
+	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {
 		t.Fatal(err)
 	}
