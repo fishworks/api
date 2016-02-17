@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	Apps  []*api.App
-	Users []*auth.User
+	Apps   []*api.App
+	Builds []*api.Build
+	Users  []*auth.User
 )
 
 // HTTPServer is an API Server which listens and responds to HTTP requests.
@@ -111,9 +112,10 @@ func createRouter() *httprouter.Router {
 
 	authRequiredMap := map[string]map[string]httprouter.Handle{
 		"GET": {
-			"/apps":          getAppsJSON,
-			"/apps/:id":      getAppJSON,
-			"/apps/:id/logs": getAppLogs,
+			"/apps":            getAppsJSON,
+			"/apps/:id":        getAppJSON,
+			"/apps/:id/builds": getAppBuildsJSON,
+			"/apps/:id/logs":   getAppLogs,
 		},
 		"POST": {
 			"/apps":            createApp,
@@ -164,15 +166,35 @@ func getAppsJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 }
 
 func getAppJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	for _, app := range Apps {
-		if app.ID == p.ByName("id") {
-			if err := WriteJSON(w, app, http.StatusOK); err != nil {
-				log.Error(err)
+	if app := getApp(p.ByName("id")); app != nil {
+		if err := WriteJSON(w, app, http.StatusOK); err != nil {
+			log.Error(err)
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func getAppBuildsJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var builds []*api.Build
+	if app := getApp(p.ByName("id")); app != nil {
+		for _, build := range Builds {
+			if build.App == app {
+				builds = append(builds, build)
 			}
-			return
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if len(builds) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		if err := WriteJSON(w, builds, http.StatusOK); err != nil {
+			log.Error(err)
 		}
 	}
-	w.WriteHeader(http.StatusNotFound)
 }
 
 func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -220,6 +242,10 @@ func createBuild(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			w.Write([]byte("could not find app with id " + p.ByName("id")))
 			return
 		}
+		// attach app to build
+		build.App = app
+		// add build to in-memory list
+		Builds = append(Builds, build)
 		release := app.NewRelease(build, nil)
 		if err := release.Publish(); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
