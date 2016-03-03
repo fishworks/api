@@ -1,13 +1,24 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"os/exec"
 
 	"github.com/fishworks/api/scheduler"
 	"github.com/fishworks/api/settings"
 )
+
+var (
+	ErrNoBuildToPublish = &ReleaseError{"no build to publish with this release"}
+)
+
+type ReleaseError struct {
+	Message string
+}
+
+func (r *ReleaseError) Error() string {
+	return fmt.Sprintf("could not publish release: %s", r.Message)
+}
 
 // Release represents a snapshot of an application's build and config artifacts, which is
 // immediately ready for execution in the execution environment.
@@ -28,11 +39,11 @@ func (r *Release) String() string {
 // Publish publishes the release to the scheduler.
 func (r *Release) Publish() error {
 	if r.Build == nil {
-		return errors.New("cannot publish; no build associated with this release")
+		return ErrNoBuildToPublish
 	}
 	sched, err := scheduler.New(settings.Scheduler)
 	if err != nil {
-		return fmt.Errorf("could not publish release: %v", err)
+		return &ReleaseError{err.Error()}
 	}
 	for typ, command := range r.Build.Procfile {
 		id := fmt.Sprintf("%s.%s.1", r.String(), typ)
@@ -46,7 +57,7 @@ func (r *Release) Publish() error {
 			return err
 		}
 		if sched.State(id) != scheduler.StateRunning {
-			return errors.New(fmt.Sprintf("job ID %s is flapping", id))
+			return fmt.Errorf("job ID %s is flapping", id)
 		}
 	}
 	return nil

@@ -201,24 +201,13 @@ func getAppBuildsJSON(w http.ResponseWriter, r *http.Request, p httprouter.Param
 }
 
 func getAppConfigJSON(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	var configs []*api.Config
 	if app := getApp(p.ByName("id")); app != nil {
-		for _, config := range Configs {
-			if config.App == app {
-				configs = append(configs, config)
-			}
+		if err := WriteJSON(w, app.LatestRelease().Config, http.StatusOK); err != nil {
+			log.Error(err)
 		}
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 		return
-	}
-
-	if len(configs) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-	} else {
-		if err := WriteJSON(w, configs, http.StatusOK); err != nil {
-			log.Error(err)
-		}
 	}
 }
 
@@ -304,15 +293,29 @@ func createConfig(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			w.Write([]byte("could not find app with id " + p.ByName("id")))
 			return
 		}
+
+		// before adding, merge new config with old (if it exists)
+		if oldRelease := app.LatestRelease(); oldRelease != nil {
+			if oldRelease.Config != nil {
+				mergedConfig := oldRelease.Config.Environment
+				for k, v := range config.Environment {
+					mergedConfig[k] = v
+				}
+				config.Environment = mergedConfig
+			}
+		}
+
 		// attach app to config
 		config.App = app
 		// add build to in-memory list
 		Configs = append(Configs, config)
 		release := app.NewRelease(nil, config)
 		if err := release.Publish(); err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(fmt.Sprintf("there was an error deploying this release: %v", err)))
-			return
+			if err != api.ErrNoBuildToPublish {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				w.Write([]byte(fmt.Sprintf("there was an error deploying this release: %v", err)))
+				return
+			}
 		}
 		app.Log("released " + release.String())
 	} else {
