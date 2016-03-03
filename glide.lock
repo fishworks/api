@@ -1,0 +1,39 @@
+hash: 9f1c42e302a02e2af11da4fca961f22f7e07028a37fa945bc1e835ac57381e7e
+updated: 2016-03-03T00:41:20.564256779-08:00
+imports:
+- name: github.com/fsouza/go-dockerclient
+  version: 7f33a5c1f3f158a021f2edc7c3857a44dcc02da4
+  subpackages:
+  - external/github.com/docker/docker/opts
+  - external/github.com/docker/docker/pkg/archive
+  - external/github.com/docker/docker/pkg/fileutils
+  - external/github.com/docker/docker/pkg/homedir
+  - external/github.com/docker/docker/pkg/stdcopy
+  - external/github.com/hashicorp/go-cleanhttp
+  - external/github.com/Sirupsen/logrus
+  - external/github.com/docker/docker/pkg/idtools
+  - external/github.com/docker/docker/pkg/ioutils
+  - external/github.com/docker/docker/pkg/longpath
+  - external/github.com/docker/docker/pkg/pools
+  - external/github.com/docker/docker/pkg/promise
+  - external/github.com/docker/docker/pkg/system
+  - external/github.com/opencontainers/runc/libcontainer/user
+  - external/golang.org/x/sys/unix
+  - external/golang.org/x/net/context
+  - external/github.com/docker/go-units
+- name: github.com/julienschmidt/httprouter
+  version: 77366a47451a56bb3ba682481eed85b64fea14e8
+- name: github.com/pborman/uuid
+  version: c55201b036063326c5b1b89ccfe45a184973d073
+- name: github.com/Sirupsen/logrus
+  version: 219c8cb75c258c552e999735be6df753ffc7afdc
+- name: golang.org/x/crypto
+  version: 5dc8cb4b8a8eb076cbb5a06bc3b8682c15bdbbd3
+  subpackages:
+  - bcrypt
+  - blowfish
+- name: golang.org/x/sys
+  version: 54535356f1d989a6072b0898d9ddc4dd7009dcd3
+  subpackages:
+  - unix
+devImports: []
