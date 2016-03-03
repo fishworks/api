@@ -5,5 +5,5 @@ package api
 // maximum cpu shares, isolating applications on a set of hosts via tags etc.
 type Config struct {
 	App         *App `json:"-"`
-	Environment map[string]string
+	Environment map[string]string `json:"environment"`
 }
