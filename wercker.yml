@@ -1,4 +1,4 @@
-box: golang:1.5.3
+box: golang:1.7.3
 build:
   steps:
     - setup-go-workspace:
@@ -7,8 +7,7 @@ build:
         name: deps
         code: |-
             go get github.com/Masterminds/glide
-            export GO15VENDOREXPERIMENT=1
-            glide up
+            glide install
     - script:
         name: build
         code: |-
