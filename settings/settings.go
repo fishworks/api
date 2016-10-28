@@ -5,5 +5,3 @@ package settings
 var ListenAddress string
 
 var LogLevel string
-
-var Scheduler string

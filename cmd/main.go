@@ -5,13 +5,19 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/fishworks/api/scheduler"
 	"github.com/fishworks/api/server"
 	"github.com/fishworks/api/settings"
+
+	"k8s.io/client-go/1.4/kubernetes"
+	"k8s.io/client-go/1.4/rest"
 )
 
 func validateSettings() {
-	if _, err := scheduler.New(settings.Scheduler); err != nil {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := kubernetes.NewForConfig(config); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -19,8 +25,6 @@ func validateSettings() {
 func main() {
 	flag.StringVar(&settings.ListenAddress, "a", "tcp://0.0.0.0:8080", "")
 	flag.StringVar(&settings.ListenAddress, "addr", "tcp://0.0.0.0:8080", "")
-	flag.StringVar(&settings.Scheduler, "s", "docker", "")
-	flag.StringVar(&settings.Scheduler, "scheduler", "docker", "")
 	flag.StringVar(&settings.LogLevel, "l", "info", "")
 	flag.StringVar(&settings.LogLevel, "log-level", "info", "")
 	flag.Parse()

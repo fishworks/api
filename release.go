@@ -2,10 +2,10 @@ package api
 
 import (
 	"fmt"
-	"os/exec"
 
-	"github.com/fishworks/api/scheduler"
-	"github.com/fishworks/api/settings"
+	"k8s.io/client-go/1.4/kubernetes"
+	v1types "k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/rest"
 )
 
 var (
@@ -36,28 +36,45 @@ func (r *Release) String() string {
 	return fmt.Sprintf("%s_v%d", r.App.ID, r.Version)
 }
 
-// Publish publishes the release to the scheduler.
+// Publish publishes the release to kubernetes.
 func (r *Release) Publish() error {
 	if r.Build == nil {
 		return ErrNoBuildToPublish
 	}
-	sched, err := scheduler.New(settings.Scheduler)
+	config, err := rest.InClusterConfig()
 	if err != nil {
-		return &ReleaseError{err.Error()}
+		return err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
 	}
 	for typ, command := range r.Build.Procfile {
-		id := fmt.Sprintf("%s.%s.1", r.String(), typ)
-		if err := sched.Create(
-			id,
-			r.Build.Artifact,
-			exec.Command("sh", "-c", command)); err != nil {
-			return err
+		podName := fmt.Sprintf("%s_%s", r.String(), typ)
+		pod := &v1types.Pod{
+			ObjectMeta: v1types.ObjectMeta{
+				Name:      podName,
+				Namespace: r.App.ID,
+				Labels: map[string]string{
+					"heritage": "deis",
+				},
+			},
+			Spec: v1types.PodSpec{
+				RestartPolicy: v1types.RestartPolicyAlways,
+				Containers: []v1types.Container{
+					v1types.Container{
+						Name:            podName,
+						Image:           r.Build.Image,
+						ImagePullPolicy: v1types.PullAlways,
+						Command:         command,
+						Env:             r.Config.Values,
+					},
+				},
+			},
 		}
-		if err := sched.Start(id); err != nil {
+		// Schedule the pod
+		if _, err := clientset.Pods(r.App.ID).Create(pod); err != nil {
 			return err
-		}
-		if sched.State(id) != scheduler.StateRunning {
-			return fmt.Errorf("job ID %s is flapping", id)
 		}
 	}
 	return nil

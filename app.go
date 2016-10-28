@@ -1,18 +1,12 @@
 package api
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"math/rand"
-	"os"
-	"path"
 	"sort"
-	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/pborman/uuid"
 )
 
@@ -29,7 +23,6 @@ type App struct {
 	ID      string        `json:"id"`
 	Created time.Time     `json:"created"`
 	Updated time.Time     `json:"updated"`
-	LogPath string        `json:"-"`
 	Ledger  releaseLedger `json:"-"`
 }
 
@@ -44,17 +37,7 @@ func NewApp(id string) *App {
 		ID:      id,
 		Created: time.Now(),
 		Updated: time.Now(),
-		LogPath: path.Join("/tmp", id+".log"),
 	}
-	// truncate or create the file
-	f, err := os.Create(app.LogPath)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"app": app.ID,
-		}).Errorf("could not create log file: %v", err)
-		return app
-	}
-	defer f.Close()
 	// create an initial release for the app
 	app.NewRelease(nil, nil)
 	return app
@@ -62,28 +45,6 @@ func NewApp(id string) *App {
 
 func (a *App) String() string {
 	return a.ID
-}
-
-// Log stores an application message on disk, using the default formats for its operands.
-func (a *App) Log(message string) {
-	f, err := os.OpenFile(a.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"app": a.ID,
-		}).Errorf("error opening file: %v", err)
-		return
-	}
-	defer f.Close()
-	log.WithFields(log.Fields{
-		"app": a.ID,
-	}).Info(message)
-	buf := bytes.NewBufferString(fmt.Sprintf("%s deis[api]: %s\n", time.Now(), strings.TrimSpace(message)))
-	io.Copy(f, buf)
-}
-
-// Logf stores an application message on disk, formatting according to a format specifier.
-func (a *App) Logf(message string, args ...interface{}) {
-	a.Log(fmt.Sprintf(message, args))
 }
 
 // LatestRelease returns the most recent release in the ledger.
@@ -115,13 +76,6 @@ func (a *App) NewRelease(build *Build, config *Config) *Release {
 		Build:   build,
 		Config:  config,
 		Version: latestRelease.Version + 1,
-	}
-	if release.Version == 1 {
-		a.Log("created initial release")
-	} else if build != latestRelease.Build {
-		a.Log("deployed " + build.Artifact)
-	} else if config != latestRelease.Config {
-		a.Log("changed config")
 	}
 	a.Ledger = append(a.Ledger, release)
 	return release

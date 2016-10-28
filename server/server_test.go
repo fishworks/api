@@ -9,14 +9,7 @@ import (
 	"testing"
 
 	"github.com/fishworks/api"
-	"github.com/fishworks/api/auth"
 )
-
-func init() {
-	// create a test user for authenticated requests
-	user, _ := auth.NewUser("testuser", "test@example.com", []byte("test"))
-	Users = append(Users, user)
-}
 
 func clearDB() {
 	Apps = Apps[:0]

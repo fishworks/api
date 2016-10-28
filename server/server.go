@@ -11,7 +11,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/fishworks/api"
-	"github.com/fishworks/api/auth"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -19,7 +18,6 @@ var (
 	Apps    []*api.App
 	Builds  []*api.Build
 	Configs []*api.Config
-	Users   []*auth.User
 )
 
 // HTTPServer is an API Server which listens and responds to HTTP requests.
@@ -99,20 +97,9 @@ func getApp(id string) *api.App {
 func createRouter() *httprouter.Router {
 	r := httprouter.New()
 
-	authNotRequiredMap := map[string]map[string]httprouter.Handle{
+	routerMap := map[string]map[string]httprouter.Handle{
 		"GET": {
-			"/_ping": ping,
-		},
-	}
-
-	for method, routes := range authNotRequiredMap {
-		for route, funct := range routes {
-			r.Handle(method, route, logRequestMiddleware(funct))
-		}
-	}
-
-	authRequiredMap := map[string]map[string]httprouter.Handle{
-		"GET": {
+			"/_ping":           ping,
 			"/apps":            getAppsJSON,
 			"/apps/:id":        getAppJSON,
 			"/apps/:id/builds": getAppBuildsJSON,
@@ -129,7 +116,7 @@ func createRouter() *httprouter.Router {
 		},
 	}
 
-	for method, routes := range authRequiredMap {
+	for method, routes := range routerMap {
 		for route, funct := range routes {
 			r.Handle(method, route, logRequestMiddleware(funct))
 		}
@@ -266,7 +253,6 @@ func createBuild(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			w.Write([]byte(fmt.Sprintf("there was an error deploying this release: %v", err)))
 			return
 		}
-		app.Log("released " + release.String())
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -297,11 +283,11 @@ func createConfig(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// before adding, merge new config with old (if it exists)
 		if oldRelease := app.LatestRelease(); oldRelease != nil {
 			if oldRelease.Config != nil {
-				mergedConfig := oldRelease.Config.Environment
-				for k, v := range config.Environment {
+				mergedConfig := oldRelease.Config.Values
+				for k, v := range config.Values {
 					mergedConfig[k] = v
 				}
-				config.Environment = mergedConfig
+				config.Values = mergedConfig
 			}
 		}
 
@@ -317,7 +303,6 @@ func createConfig(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				return
 			}
 		}
-		app.Log("released " + release.String())
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -342,20 +327,12 @@ func getAppLogs(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 					return
 				}
 				defer conn.Close()
-				f, err := os.Open(app.LogPath)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				defer f.Close()
-				go func() {
-					for {
-						io.Copy(conn, f)
-					}
-				}()
+				// watch app logs
 				bufrw.ReadString('\n')
 			} else {
-				http.ServeFile(w, r, app.LogPath)
+				// serve app logs
+				w.WriteHeader(http.StatusOK)
+				return
 			}
 			return
 		}

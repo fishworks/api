@@ -1,9 +1,12 @@
 package api
 
+import (
+	v1types "k8s.io/client-go/1.4/pkg/api/v1"
+)
+
 // Config is a map of key/value strings which specify the environment variables that should exist
-// in the execution environment. This also includes other values like the maximum allocated memory,
-// maximum cpu shares, isolating applications on a set of hosts via tags etc.
+// in the execution environment.
 type Config struct {
-	App         *App              `json:"-"`
-	Environment map[string]string `json:"environment"`
+	App    *App             `json:"-"`
+	Values []v1types.EnvVar `json:"values"`
 }
