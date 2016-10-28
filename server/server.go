@@ -201,13 +201,14 @@ func getAppConfigJSON(w http.ResponseWriter, r *http.Request, p httprouter.Param
 func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var (
 		app  *api.App
+		err  error
 		form struct {
 			ID string `json:"id"`
 		}
 	)
 	if r.Body != nil {
 		decoder := json.NewDecoder(r.Body)
-		if err := decoder.Decode(&form); err != nil {
+		if err = decoder.Decode(&form); err != nil {
 			// the request body is always non-nil (except in tests) but will return EOF immediately when no body is present.
 			// http://golang.org/pkg/net/http/#Request
 			if err != io.EOF {
@@ -216,9 +217,19 @@ func createApp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				return
 			}
 		}
-		app = api.NewApp(form.ID)
+		app, err = api.NewApp(form.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("could not create application: " + err.Error()))
+			return
+		}
 	} else {
-		app = api.NewApp("")
+		app, err = api.NewApp("")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("could not create application: " + err.Error()))
+			return
+		}
 	}
 	Apps = append(Apps, app)
 	w.WriteHeader(http.StatusCreated)

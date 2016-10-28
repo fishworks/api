@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/pborman/uuid"
+	"k8s.io/client-go/1.4/kubernetes"
+	v1types "k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/rest"
 )
 
 type releaseLedger []*Release
@@ -28,7 +31,7 @@ type App struct {
 
 // NewApp creates a new application with the given ID. If no ID is supplied, one will be
 // automatically generated.
-func NewApp(id string) *App {
+func NewApp(id string) (*App, error) {
 	if id == "" {
 		id = generateAppName()
 	}
@@ -40,7 +43,27 @@ func NewApp(id string) *App {
 	}
 	// create an initial release for the app
 	app.NewRelease(nil, nil)
-	return app
+	// create a namespace for the app
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	namespace := &v1types.Namespace{
+		ObjectMeta: v1types.ObjectMeta{
+			Name: id,
+			Labels: map[string]string{
+				"heritage": "deis",
+			},
+		},
+	}
+	if _, err := clientset.Core().Namespaces().Create(namespace); err != nil {
+		return nil, err
+	}
+	return app, nil
 }
 
 func (a *App) String() string {

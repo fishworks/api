@@ -86,7 +86,7 @@ func TestCreateAppWithID(t *testing.T) {
 // TestGetAppRemovesUUID tests that an application's UUID does not show up in the response body.
 func TestGetAppRemovesUUID(t *testing.T) {
 	defer clearDB()
-	app := api.NewApp("autotest")
+	app, _ := api.NewApp("autotest")
 	Apps = append(Apps, app)
 	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {
@@ -113,7 +113,7 @@ func TestGetAppRemovesUUID(t *testing.T) {
 
 func TestGetAppLogs(t *testing.T) {
 	defer clearDB()
-	app := api.NewApp("autotest")
+	app, _ := api.NewApp("autotest")
 	Apps = append(Apps, app)
 	app.Log("ohai der =3")
 	srv, err := New("tcp", "0.0.0.0:4567")
@@ -137,7 +137,7 @@ func TestGetAppLogs(t *testing.T) {
 
 func TestDeleteApp(t *testing.T) {
 	defer clearDB()
-	app := api.NewApp("autotest")
+	app, _ := api.NewApp("autotest")
 	Apps = append(Apps, app)
 	srv, err := New("tcp", "0.0.0.0:4567")
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 )
 
 func TestCreateApp(t *testing.T) {
-	app := NewApp("test")
+	app, _ := NewApp("test")
 
 	// close enough for government work!
 	if time.Since(app.Created) > time.Duration(10*time.Millisecond) {
@@ -30,7 +30,7 @@ func TestCreateApp(t *testing.T) {
 }
 
 func TestCreateAppWithNoID(t *testing.T) {
-	app := NewApp("")
+	app, _ := NewApp("")
 
 	if app.ID == "" {
 		t.Error("expected app ID to be generated, got empty string")
@@ -38,7 +38,7 @@ func TestCreateAppWithNoID(t *testing.T) {
 }
 
 func TestAppRelease(t *testing.T) {
-	app := NewApp("")
+	app, _ := NewApp("")
 	release := app.NewRelease(&Build{}, &Config{})
 	if release == nil {
 		t.Errorf("expected app to create a new release")
@@ -64,7 +64,7 @@ func TestAppRelease(t *testing.T) {
 }
 
 func TestAppRollback(t *testing.T) {
-	app := NewApp("")
+	app, _ := NewApp("")
 	release2 := app.NewRelease(&Build{}, &Config{})
 	app.NewRelease(&Build{}, &Config{})
 
