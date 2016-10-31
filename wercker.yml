@@ -12,7 +12,3 @@ build:
         name: build
         code: |-
             make && make install
-    - script:
-        name: test
-        code: |-
-            make test
